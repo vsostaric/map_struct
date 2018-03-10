@@ -1,15 +1,18 @@
 package app.model;
 
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDate;
+
+@Data
+@Builder
 public class Person {
 
-  private String name;
-
-  public String getName() {
-    return name;
-  }
-
-  public void setName(String name) {
-    this.name = name;
-  }
+    private String fullName;
+    private String address;
+    private LocalDate dateOfBirth;
+    private Car car;
 
 }

@@ -31,6 +31,7 @@ public class PersonMapperTest {
                 .fullName("Hightop Straw")
                 .address("Pennbroke 82")
                 .dateOfBirth(LocalDate.of(1989, 10, 13))
+                .numberOfVisits(7)
                 .car(Car.builder().carModel("\"Renault Laguna\"").build())
                 .build();
     }
@@ -60,7 +61,16 @@ public class PersonMapperTest {
     @Test
     public void testYearOfBirth() {
         final PersonDTO mapped = personMapper.personToPersonDTO(person_hightop);
-        assertThat(mapped.getYearOfBirth()).isEqualTo("1989");
+        assertThat(mapped.getBorn()).isEqualTo("1989 13 10");
+    }
+
+    @Test
+    public void testIntToLongAndBack() {
+        final PersonDTO mapped = personMapper.personToPersonDTO(person_hightop);
+        assertThat(mapped.getTimesVisited()).isEqualTo(7);
+
+        final Person reMapped = personMapper.personDTOToPerson(mapped);
+        assertThat(reMapped.getNumberOfVisits()).isEqualTo(7);
     }
 
 }

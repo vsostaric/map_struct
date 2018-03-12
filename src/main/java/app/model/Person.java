@@ -17,5 +17,6 @@ public class Person {
     private String address;
     private LocalDate dateOfBirth;
     private Car car;
+    private int numberOfVisits;
 
 }

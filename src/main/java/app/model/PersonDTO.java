@@ -8,7 +8,8 @@ public class PersonDTO {
     private String firstName;
     private String lastName;
     private String residence;
-    private String yearOfBirth;
+    private String born;
+    private Long timesVisited;
 
     private CarDTO carDTO;
 

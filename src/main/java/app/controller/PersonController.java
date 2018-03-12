@@ -15,9 +15,13 @@ public class PersonController {
 
     private PersonService personService;
 
+    private PersonMapper personMapper;
+
     @Autowired
-    public PersonController(PersonService personService) {
+    public PersonController(final PersonService personService,
+                            final PersonMapper personMapper) {
         this.personService = personService;
+        this.personMapper = personMapper;
     }
 
     @GetMapping("/getPerson")
@@ -28,7 +32,7 @@ public class PersonController {
 
     @GetMapping("/getPersonDTO")
     public PersonDTO getPersonDTO() {
-        return PersonMapper.INSTANCE.personToPersonDTO(personService.getRandomPerson());
+        return personMapper.personToPersonDTO(personService.getRandomPerson());
     }
 
 }

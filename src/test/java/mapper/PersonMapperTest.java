@@ -8,18 +8,22 @@ import app.model.PersonDTO;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.time.LocalDate;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = Application.class)
 public class PersonMapperTest {
 
     private Person person_hightop;
+
+    @Autowired
+    private PersonMapper personMapper;
 
     @Before
     public void init() {
@@ -34,7 +38,7 @@ public class PersonMapperTest {
     @Test
     public void testAddressMapping() {
 
-        final PersonDTO mapped = PersonMapper.INSTANCE.personToPersonDTO(person_hightop);
+        final PersonDTO mapped = personMapper.personToPersonDTO(person_hightop);
         assertThat(mapped.getResidence()).isEqualTo(person_hightop.getAddress());
 
     }
@@ -42,20 +46,20 @@ public class PersonMapperTest {
     @Test
     public void testAddressDefaultMapping() {
         person_hightop.setAddress(null);
-        final PersonDTO mapped = PersonMapper.INSTANCE.personToPersonDTO(person_hightop);
+        final PersonDTO mapped = personMapper.personToPersonDTO(person_hightop);
         assertThat(mapped.getResidence()).isEqualTo("unknown");
     }
 
     @Test
     public void testName() {
-        final PersonDTO mapped = PersonMapper.INSTANCE.personToPersonDTO(person_hightop);
+        final PersonDTO mapped = personMapper.personToPersonDTO(person_hightop);
         assertThat(mapped.getFirstName()).isEqualTo("Hightop");
         assertThat(mapped.getLastName()).isEqualTo("Straw");
     }
 
     @Test
     public void testYearOfBirth() {
-        final PersonDTO mapped = PersonMapper.INSTANCE.personToPersonDTO(person_hightop);
+        final PersonDTO mapped = personMapper.personToPersonDTO(person_hightop);
         assertThat(mapped.getYearOfBirth()).isEqualTo("1989");
     }
 

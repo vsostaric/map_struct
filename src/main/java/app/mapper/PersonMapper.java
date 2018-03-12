@@ -13,8 +13,6 @@ import org.mapstruct.factory.Mappers;
 @Mapper
 public interface PersonMapper {
 
-    PersonMapper INSTANCE = Mappers.getMapper(PersonMapper.class);
-
     @Mappings({
             @Mapping(source = "address", target = "residence", defaultValue = "unknown"),
             @Mapping(target = "firstName", expression = "java(person.getFullName().split(\" \")[0])"),
@@ -22,6 +20,9 @@ public interface PersonMapper {
             @Mapping(source = "dateOfBirth", target = "yearOfBirth", dateFormat = "yyyy")
     })
     PersonDTO personToPersonDTO(Person person);
+
+    @InheritInverseConfiguration
+    Person personDTOToPerson(PersonDTO personDTO);
 
     default CarDTO carToCarDTO(Car car) {
         return CarDTO.builder().modelOfCar(car.getCarModel()).build();

@@ -87,7 +87,7 @@ public class PersonDTO {
 ------
 == Creating the mapper
 To create a mapper we need to annotate an interface with org.mapstruct.Mapper.
-Convention set in MapStruct documentation is to create a public static instance of the mapper in the interface.
+Convention set in MapStruct documentation is to create a public static instance of the mapper in the interface using the Mappers factory.
 ------
 @Mapper
 public interface PersonMapper {
@@ -101,14 +101,25 @@ public interface PersonMapper {
 
 }
 ------
-A different way of doing this would be autowiring Mappers as a bean.
-
-== Using the mapper
-With the mapper as in the previous section it can be used.
+This way the mapper can be used as a static instance.
 -----
 PersonMapper.INSTANCE.personToPersonDTO(personObject)
 -----
-After running maven compile an actual implementation will be created in the target directory, in the same package as the interface.
+A different way of doing this would be autowiring Mappers as a bean.
+The mapper annotation has a componentModel property whoose default value is spring.
+When you generate a mapper it is automatically created as a bean.
+------
+@Autowired
+private PersonMapper personMapper;
+------
+A third way of using the mapper is setting the component model to cdi which makes the mapper an application-scoped CDI bean.
+Then it can be injected into a class using the @Inject annotation.
+------
+@Mapper(componentModel = "cdi")
+...
+@Inject
+private PersonMapper personMapper;
+------
 
 === Simple Case
 In the most simple case when the field is mapped one-to-one the implementation is fairly simple.
@@ -125,14 +136,13 @@ else {
   personDTO.setResidence("unknown");
 }
 ------
-This is the most simple case, but it does cover the most often case in mapping.
-Unfortunately, it is often not enough.
+Unfortunately, this simple case is often not enough.
 When implementing a model to model mapping the differences are often more than simply renamed fields.
 
 === Type conversion
-When mapped fields are different types it may not be possible to mapped them using an annotation as in a simple case.
+When mapped fields are of different types it may not be possible to map them in a simple manner.
 For most implicit type conversion MapStruct will handle conversion.
-It can convert int to long or boolean to String.
+It can convert int to long, boolean to String.
 In case of converting an int, BigDecimal or a number type to String we can use numberFormat parameter of the Mapping annotation to define the format.
 The format String has to be able to be read by java.text.DecimalFormat.
 

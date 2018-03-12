@@ -23,9 +23,6 @@ public interface PersonMapper {
     })
     PersonDTO personToPersonDTO(Person person);
 
-//    @InheritInverseConfiguration
-//    Person personDTOToPerson(PersonDTO personDTO);
-
     default CarDTO carToCarDTO(Car car) {
         return CarDTO.builder().modelOfCar(car.getCarModel()).build();
     }

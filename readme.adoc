@@ -1,15 +1,30 @@
 
 = MapStruct
 
-This article aims to illustrate ways of using this technology.
-The need to map one model to another is common in integration code.
-It usually results in huge mapping logic which is hard to maintain.
-MapStruct can be used to mitigate these issues.
-It is based on convention over configuration approach.
+== Overview
+MapStruct is an annotation based java library with the goal of simplifying mapping logic.
+The need for a model to model mapping is a common one, especially in integration code.
+This need can spawn a myriad of methods of the following form:
+------
+ModelAObject modelBObjectToModelAObject(ModelBObject objectB);
+------
+Or perhaps:
+------
+void mapModelAToModelB(ModelAObject objectA, ModelBObject objectB);
+------
+When facing a huge model the logic of implementing a method like this can become inelegant.
+Whether the size is overstretched due to the underlying complexity of the business process or to a programmer not adhering to the single responsibility principle often makes little difference in these situations.
+
+It most often ends up being a sequence of null or empty checks with a setter call in the conditional body.
+MapStruct aims to mitigate these issues by providing a generator of these kinds of mappers.
+
+Here I will show a few basic examples how to setup and configurate generation.
+The annotation and convention over configuration approach end up with less boiler plate code.
 
 == Setup
 The entire example code can be found in -----.
 It is a simple maven project.
+For a gradle or ant setup see MapStruct documentation.
 For it to work mapstruct-jdk8 dependency is needed as well as maven-compiler-plugin configuration.
 Example of the plugin configuration.
 ------
@@ -40,11 +55,17 @@ Example of the plugin configuration.
     </configuration>
 </plugin>
 ------
+I added lombok dependency since I use lombok in my example.
+
 The mapstruct-processor will generate an implementation class in maven compile lifecycle.
 
 == Model Used for Presentation
 Using a simple Person/PersonDTO model we can show an example of MapStruct usage.
 ------
+import lombok.Data;
+import java.time.LocalDate;
+
+@Data
 public class Person {
     private String fullName;
     private String address;
@@ -53,6 +74,9 @@ public class Person {
 }
 ------
 ------
+import lombok.Data;
+
+@Data
 public class PersonDTO {
     private String firstName;
     private String lastName;
@@ -62,7 +86,8 @@ public class PersonDTO {
 }
 ------
 == Creating the mapper
-A convention of creating the mapper set in MapStruct documentation is to create a public static instance of the mapper in the interface.
+To create a mapper we need to annotate an interface with org.mapstruct.Mapper.
+Convention set in MapStruct documentation is to create a public static instance of the mapper in the interface.
 ------
 @Mapper
 public interface PersonMapper {
@@ -83,6 +108,7 @@ With the mapper as in the previous section it can be used.
 -----
 PersonMapper.INSTANCE.personToPersonDTO(personObject)
 -----
+After running maven compile an actual implementation will be created in the target directory, in the same package as the interface.
 
 === Simple Case
 In the most simple case when the field is mapped one-to-one the implementation is fairly simple.
@@ -90,13 +116,65 @@ In the most simple case when the field is mapped one-to-one the implementation i
 @Mapping(source = "address", target = "residence", defaultValue = "unknown")
 ------
 The address and residence are the same field with different names.
-This makes simple.
+In the generated implementation this code will appear:
+------
+if (person.getAddress() != null) {
+  personDTO.setResidence(person.getAddress());
+}
+else {
+  personDTO.setResidence("unknown");
+}
+------
+This is the most simple case, but it does cover the most often case in mapping.
+Unfortunately, it is often not enough.
+When implementing a model to model mapping the differences are often more than simply renamed fields.
+
+=== Type conversion
+When mapped fields are different types it may not be possible to mapped them using an annotation as in a simple case.
+For most implicit type conversion MapStruct will handle conversion.
+It can convert int to long or boolean to String.
+In case of converting an int, BigDecimal or a number type to String we can use numberFormat parameter of the Mapping annotation to define the format.
+The format String has to be able to be read by java.text.DecimalFormat.
+
+==== Date to String
+In case of Date to String transformation the dateFormat parameter can be used to specify the format String.
+------
+@Mapping(source = "dateOfBirth", target = "yearOfBirth", dateFormat = "yyyy")
+------
+Using this code generated will be:
+------
+if (person.getDateOfBirth() != null) {
+  personDTO.setYearOfBirth(DateTimeFormatter.ofPattern("yyyy").format(person.getDateOfBirth()));
+}
+------
+MapStruct supports org.yoda.time.* as well as java.sql.* or java.time.*
 
 === Expression
-
-=== Date and BigDecimal to String
+If the mapping logic can be expressed in a single line, expression can be a viable choice.
+This is an example of mapping one field fullName to two fields firstName and lastName using expression.
+------
+@Mapping(target = "firstName", expression = "java(person.getFullName().split(\" \")[0])")
+@Mapping(target = "lastName", expression = "java(person.getFullName().split(\" \")[1])")
+------
+The mapping generated result will be:
+------
+personDTO.setFirstName(person.getFullName().split(" ")[0]);
+personDTO.setLastName(person.getFullName().split(" ")[1]);
+------
+There are obvious problems.
+What if fullName is null or empty?
+What if it's a single word?
+This would require us to expand the expression to something like this:
+------
+(StringUtils.isNotEmpty(person.getFullName()) && person.getFullName().split(\" \").length > 1) ? person.getFullName().split(\" \")[0] : ""
+------
+Obviously, a single expression can grow too long and hard to maintain, so it should be used carefully.
+MapStruct expression at this point supports only java expressions, but the plan was to expand this list.
+This is why the expression must be wrapped in java(/expression/).
 
 === More Complex Mapping
+If mapping logic can't be fulfilled with naming the source and target, with automatic type casting or with an expression, then we will have to expand the mapper.
+
 
 === Suggestion on use
 

@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -32,6 +33,7 @@ public class PersonMapperTest {
     private Set<Person> personSet;
 
     private PersonDTO person_hightop_mapped;
+    private Person person_hightop_remapped;
 
     @Autowired
     private PersonMapper personMapper;
@@ -43,6 +45,7 @@ public class PersonMapperTest {
                 .address("Pennbroke 82")
                 .dateOfBirth(LocalDate.of(1989, 10, 13))
                 .numberOfVisits(7)
+                .moneyOnHisMind(new BigDecimal("1021.44"))
                 .car(Car.builder().carModel("\"Renault Laguna\"").build())
                 .build();
 
@@ -61,6 +64,7 @@ public class PersonMapperTest {
                 .build();
 
         person_hightop_mapped = personMapper.personToPersonDTO(person_hightop);
+        person_hightop_remapped = personMapper.personDTOToPerson(person_hightop_mapped);
     }
 
     @Test
@@ -89,9 +93,13 @@ public class PersonMapperTest {
     @Test
     public void testIntToLongAndBack() {
         assertThat(person_hightop_mapped.getTimesVisited()).isEqualTo(7);
+        assertThat(person_hightop_remapped.getNumberOfVisits()).isEqualTo(7);
+    }
 
-        final Person reMapped = personMapper.personDTOToPerson(person_hightop_mapped);
-        assertThat(reMapped.getNumberOfVisits()).isEqualTo(7);
+    @Test
+    public void testMoney() {
+        assertThat(person_hightop_mapped.getMoney()).isEqualTo("1.02E3");
+        assertThat(person_hightop_remapped.getMoneyOnHisMind().compareTo(new BigDecimal(1.02E+3))).isEqualTo(0);
     }
 
     @Test

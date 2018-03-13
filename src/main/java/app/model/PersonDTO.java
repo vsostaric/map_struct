@@ -10,7 +10,7 @@ public class PersonDTO {
     private String residence;
     private String born;
     private Long timesVisited;
-
+    private String money;
     private CarDTO carDTO;
 
 }

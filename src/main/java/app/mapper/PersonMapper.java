@@ -22,7 +22,8 @@ public interface PersonMapper {
             @Mapping(target = "firstName", expression = "java(person.getFullName().split(\" \")[0])"),
             @Mapping(target = "lastName", expression = "java(person.getFullName().split(\" \")[1])"),
             @Mapping(source = "dateOfBirth", target = "born", dateFormat = "yyyy dd MM"),
-            @Mapping(source = "numberOfVisits", target = "timesVisited")
+            @Mapping(source = "numberOfVisits", target = "timesVisited"),
+            @Mapping(source = "moneyOnHisMind", target = "money", numberFormat = "#.##E0")
     })
     PersonDTO personToPersonDTO(Person person);
 

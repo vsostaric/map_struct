@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Data
@@ -18,5 +19,6 @@ public class Person {
     private LocalDate dateOfBirth;
     private Car car;
     private int numberOfVisits;
+    private BigDecimal moneyOnHisMind;
 
 }

@@ -1,6 +1,5 @@
 package app.service.impl;
 
-import app.model.Car;
 import app.model.Person;
 import app.service.PersonService;
 import org.springframework.stereotype.Service;

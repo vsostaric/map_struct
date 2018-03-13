@@ -17,8 +17,8 @@ public class Person {
     private String fullName;
     private String address;
     private LocalDate dateOfBirth;
-    private Car car;
     private int numberOfVisits;
     private BigDecimal moneyOnHisMind;
+    private Car car;
 
 }

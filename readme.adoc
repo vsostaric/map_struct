@@ -15,10 +15,11 @@ void mapModelAToModelB(ModelAObject objectA, ModelBObject objectB);
 When facing a huge model, implementation of a method like this becomes tedious.
 Whether the size is overstretched due to the underlying complexity of the business process or to a programmer not adhering to the single responsibility principle often makes little difference in these situations.
 
+Furthermore, mapping logic is by it's nature repetitive.
 It most often ends up being a sequence of null or empty checks with a setter call in the conditional body.
-MapStruct aims to mitigate these issues by providing a generator of these of mappers.
+MapStruct aims to exploit this repetitive nature to provide a specialized code generator.
 
-Here I will show a few basic examples how to setup and configurate MapStruct to do this.
+Here I will show a few basic examples how to setup and configurate MapStruct.
 
 The ultimate result is a generated implementation which will most likely resemble a manually written class.
 In fact MapStruct documentation states:
@@ -26,11 +27,14 @@ In fact MapStruct documentation states:
 "The general philosophy of MapStruct is to generate code which looks as much as possible as if you had written it yourself from hand."
 ... (1)
 ------
-Still it's worth prefering generating over typing.
+It's worth prefering generating over typing.
 It's faster.
 It cuts a lot of boiler plate code.
 It's more consistent.
-Type errors are cought in compile time, most other errors in build time.
+Type errors are cought in compile time while most other errors in build time.
+
+In my opinion the best part of this approach is that it exposes the more complex parts of the mapping logic.
+I will elaborate on this later in the article.
 
 == Setup
 The entire example code can be found in -----.
@@ -58,30 +62,39 @@ Example of the plugin configuration.
                 <version>${org.mapstruct.version}</version>
             </path>
         </annotationProcessorPaths>
-        <compilerArgs>
-            <compilerArg>
-                -Amapstruct.defaultComponentModel=spring
-            </compilerArg>
-        </compilerArgs>
     </configuration>
 </plugin>
 ------
-I added lombok dependency since I use lombok in my example.
+I added lombok dependency since I need it to generate setters and build methods for my code to work.
+If you're not using lombok remove it from the configuration.
 
 The mapstruct-processor will generate an implementation class in maven compile lifecycle.
+The generated class will be in the same package as the interface or abstract class used to configure the implemented class.
 
 == Model Used for Presentation
 Using a simple Person/PersonDTO model we can show an example of MapStruct usage.
 ------
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class Person {
+
     private String fullName;
     private String address;
     private LocalDate dateOfBirth;
     private Car car;
+    private int numberOfVisits;
+    private BigDecimal moneyOnHisMind;
+
 }
 ------
 ------
@@ -89,11 +102,15 @@ import lombok.Data;
 
 @Data
 public class PersonDTO {
+
     private String firstName;
     private String lastName;
     private String residence;
-    private String yearOfBirth;
+    private String born;
+    private Long timesVisited;
+    private String money;
     private CarDTO carDTO;
+
 }
 ------
 == Creating the mapper
@@ -117,11 +134,24 @@ This way the mapper can be used as a static resource.
 -----
 PersonMapper.INSTANCE.personToPersonDTO(personObject)
 -----
-A different way of doing this would be autowiring PersonMapper as a spring bean.
-The mapper annotation has a componentModel property whoose default value is "default".
-When you generate a mapper it is automatically created as a bean.
-
+The mapper annotation has a componentModel property.
+From (2), this property:
 ------
+"Specifies the component model to which the generated mapper should adhere."
+------
+This is helpful to define how are we going to use the mapper in our code.
+
+The default value is "default".
+This means that there is no component model and that it's expected you will be retrieving the mapper as a static resource, as seen above.
+
+A different way of doing this would be autowiring PersonMapper as a spring bean.
+This is done by setting the componentModel to spring.
+------
+@Mapper(componentModel = "spring")
+public interface PersonMapper {
+    ...
+}
+
 @Autowired
 private PersonMapper personMapper;
 ------
@@ -133,9 +163,12 @@ Then it can be injected into a class using the @Inject annotation.
 @Inject
 private PersonMapper personMapper;
 ------
+In my example I stick to spring.
+The important part is to see that the MapStruct can be added to any Java application, regardless of the framework.
+As long as we have Maven, Gradle or Ant to run it's code generator.
 
 === Simple Case
-In the most simple case when the field is mapped one-to-one the implementation is fairly simple.
+In the most simple case when the field is mapped one-to-one the implementation is a single annotation.
 ------
 @Mapping(source = "address", target = "residence", defaultValue = "unknown")
 ------
@@ -149,8 +182,8 @@ else {
   personDTO.setResidence("unknown");
 }
 ------
-Unfortunately, this simple case is often not enough.
-When implementing a model to model mapping the differences are often more than simply renamed fields.
+Unfortunately, this simple case is sometimes not enough.
+Sometimes, mapped field differ in more than name, they may even be of different type.
 
 === Type conversion
 When mapped fields are of different types it may not be possible to map them in a simple manner.
@@ -159,10 +192,27 @@ It will accept casting of primitive types to wrappers and between primitive type
 
 In case of converting a larger type to a smaller one, precision issues may arrise.
 
+But what if we have a complex type field?
+And if it's mapped to a third type, like in the example:
+------
+public class Person {
+    ...
+    private Car car;
+}
+public class PersonDTO {
+    ...
+    private CarDTO carDTO;
+
+}
+------
+
+==== Number or Date to String
 In case of converting an int, BigDecimal or a number type to String we can use numberFormat parameter of the Mapping annotation to define the format.
 The format String has to be able to be read by java.text.DecimalFormat.
-
-==== Date to String
+Example of this:
+------
+@Mapping(source = "moneyOnHisMind", target = "money", numberFormat = "#.##E0")
+------
 In case of Date to String transformation the dateFormat parameter can be used to specify the format String.
 ------
 @Mapping(source = "dateOfBirth", target = "yearOfBirth", dateFormat = "yyyy dd MM")
@@ -287,9 +337,18 @@ It will need a no argument constructor and setter methods on mapped fields.
 
 If you have no control on the model structure, at least on the model you're mapping to then you should be cautious on using MapStruct.
 
+== Aspects of MapStruct not covered
+Here I will just mention what I didn't include in the example.
+Look the official MapStruct documentation (1) for additional information.
+
+* Mapping with multiple source objects
+* Shared and inherited configuration
+* Using decorators to expand mapping
+
 == Conclusion
 MapStruct can provide a simplification to an otherwise bulky and ugly piece of logic.
 It's convention over configuration approach can cover most simple cases and provide us with an easy annotation based way to generate a mapper.
 When a need for more complex logic arises the service can be expanded and allow us to add manually written logic.
 
 == Documentation
+* (1) http://mapstruct.org/documentation/stable/reference/html/

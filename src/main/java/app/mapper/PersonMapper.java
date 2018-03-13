@@ -8,7 +8,6 @@ import org.mapstruct.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -23,24 +22,25 @@ public interface PersonMapper {
             @Mapping(target = "lastName", expression = "java(person.getFullName().split(\" \")[1])"),
             @Mapping(source = "dateOfBirth", target = "born", dateFormat = "yyyy dd MM"),
             @Mapping(source = "numberOfVisits", target = "timesVisited"),
-            @Mapping(source = "moneyOnHisMind", target = "money", numberFormat = "#.##E0")
+            @Mapping(source = "moneyOnHisMind", target = "money", numberFormat = "#.##E0"),
+            @Mapping(source = "car", target = "carDTO")
     })
     PersonDTO personToPersonDTO(Person person);
+
+    default CarDTO carToCarDTO(Car car) {
+        return car != null ? CarDTO.builder().modelOfCar(car.getCarModel()).build() : null;
+    }
 
     List<PersonDTO> personsToPersonDTOs(List<Person> persons);
 
     Set<PersonDTO> personsToPersonDTOs(Set<Person> persons);
-
-    default CarDTO carToCarDTO(Car car) {
-        return CarDTO.builder().modelOfCar(car.getCarModel()).build();
-    }
 
     @InheritInverseConfiguration
     Person personDTOToPerson(PersonDTO personDTO);
 
     @BeforeMapping
     default void withArguments(Person person, @MappingTarget PersonDTO personDTO) {
-        LOG.info("Mapping " + person + " to " + PersonDTO.class);
+        LOG.info("Mapping " + person + " to " + personDTO.getClass());
     }
 
     @AfterMapping

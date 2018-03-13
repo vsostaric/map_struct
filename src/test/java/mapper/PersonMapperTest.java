@@ -29,14 +29,15 @@ public class PersonMapperTest {
     private Person person_laydown;
     private Person person_run;
 
-    private List<Person> personList;
-    private Set<Person> personSet;
-
     private PersonDTO person_hightop_mapped;
     private Person person_hightop_remapped;
 
-    @Autowired
     private PersonMapper personMapper;
+
+    @Autowired
+    public void setPersonMapper(PersonMapper personMapper) {
+        this.personMapper = personMapper;
+    }
 
     @Before
     public void init() {
@@ -46,7 +47,7 @@ public class PersonMapperTest {
                 .dateOfBirth(LocalDate.of(1989, 10, 13))
                 .numberOfVisits(7)
                 .moneyOnHisMind(new BigDecimal("1021.44"))
-                .car(Car.builder().carModel("\"Renault Laguna\"").build())
+                .car(Car.builder().carModel("Renault Laguna").build())
                 .build();
 
         person_laydown = Person.builder()
@@ -104,12 +105,12 @@ public class PersonMapperTest {
 
     @Test
     public void testListMapping() {
-        personList = new ArrayList<>();
+        List<Person> personList = new ArrayList<>();
         personList.add(person_hightop);
         personList.add(person_laydown);
         personList.add(person_run);
 
-        final List<PersonDTO> mapped = personMapper.personsToPersonDTOs(personList);
+        List<PersonDTO> mapped = personMapper.personsToPersonDTOs(personList);
 
         assertThat(mapped.size()).isEqualTo(3);
         assertThat(mapped.get(0).getFirstName()).isEqualTo("Hightop");
@@ -119,14 +120,19 @@ public class PersonMapperTest {
 
     @Test
     public void testSetMapping() {
-        personSet = new HashSet<>();
+        Set<Person> personSet = new HashSet<>();
         personSet.add(person_hightop);
         personSet.add(person_laydown);
         personSet.add(person_run);
 
-        final Set<PersonDTO> mapped = personMapper.personsToPersonDTOs(personSet);
+        Set<PersonDTO> mapped = personMapper.personsToPersonDTOs(personSet);
         assertThat(mapped.size()).isEqualTo(3);
 
+    }
+
+    @Test
+    public void testCarMapping() {
+        assertThat(person_hightop_mapped.getCarDTO().getModelOfCar()).isEqualTo("Renault Laguna");
     }
 
 }

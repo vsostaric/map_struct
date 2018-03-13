@@ -8,23 +8,34 @@ This need can spawn a myriad of methods of the following form:
 ------
 ModelAObject modelBObjectToModelAObject(ModelBObject objectB);
 ------
-Or perhaps:
+or:
 ------
 void mapModelAToModelB(ModelAObject objectA, ModelBObject objectB);
 ------
-When facing a huge model the logic of implementing a method like this can become inelegant.
+When facing a huge model, implementation of a method like this becomes tedious.
 Whether the size is overstretched due to the underlying complexity of the business process or to a programmer not adhering to the single responsibility principle often makes little difference in these situations.
 
 It most often ends up being a sequence of null or empty checks with a setter call in the conditional body.
-MapStruct aims to mitigate these issues by providing a generator of these kinds of mappers.
+MapStruct aims to mitigate these issues by providing a generator of these of mappers.
 
-Here I will show a few basic examples how to setup and configurate generation.
-The annotation and convention over configuration approach end up with less boiler plate code.
+Here I will show a few basic examples how to setup and configurate MapStruct to do this.
+
+The ultimate result is a generated implementation which will most likely resemble a manually written class.
+In fact MapStruct documentation states:
+------
+"The general philosophy of MapStruct is to generate code which looks as much as possible as if you had written it yourself from hand."
+... (1)
+------
+Still it's worth prefering generating over typing.
+It's faster.
+It cuts a lot of boiler plate code.
+It's more consistent.
+Type errors are cought in compile time, most other errors in build time.
 
 == Setup
 The entire example code can be found in -----.
 It is a simple maven project.
-For a gradle or ant setup see MapStruct documentation.
+For a gradle or ant setup see MapStruct documentation (1).
 For it to work mapstruct-jdk8 dependency is needed as well as maven-compiler-plugin configuration.
 Example of the plugin configuration.
 ------
@@ -86,7 +97,8 @@ public class PersonDTO {
 }
 ------
 == Creating the mapper
-To create a mapper we need to annotate an interface with org.mapstruct.Mapper.
+To create a mapper we need to annotate an interface or an abstract class with org.mapstruct.Mapper.
+In the example I will use an interface.
 Convention set in MapStruct documentation is to create a public static instance of the mapper in the interface using the Mappers factory.
 ------
 @Mapper
@@ -101,13 +113,14 @@ public interface PersonMapper {
 
 }
 ------
-This way the mapper can be used as a static instance.
+This way the mapper can be used as a static resource.
 -----
 PersonMapper.INSTANCE.personToPersonDTO(personObject)
 -----
-A different way of doing this would be autowiring Mappers as a bean.
-The mapper annotation has a componentModel property whoose default value is spring.
+A different way of doing this would be autowiring PersonMapper as a spring bean.
+The mapper annotation has a componentModel property whoose default value is "default".
 When you generate a mapper it is automatically created as a bean.
+
 ------
 @Autowired
 private PersonMapper personMapper;
@@ -142,7 +155,7 @@ When implementing a model to model mapping the differences are often more than s
 === Type conversion
 When mapped fields are of different types it may not be possible to map them in a simple manner.
 MapStruct will perform most implicit conversion.
-It will accept convertion of primitive types to wrappers and between primitive types and String.
+It will accept casting of primitive types to wrappers and between primitive types and String.
 
 In case of converting a larger type to a smaller one, precision issues may arrise.
 
@@ -204,6 +217,8 @@ doComplexMapping( person, personDTO );
 return personDTO;
 ....
 ------
+Annotation @BeforeMapping works in a similar mapping, calling the method after the instance is created.
+
 Another way is to create another bean and autowire the Mapper, expand it's functionality and use that bean for mapping in the application.
 ------
 @Service
@@ -264,6 +279,13 @@ Person personDTOToPerson(PersonDTO personDTO);
 Mapping using the expression parameter will not be applied.
 MapStruct can't create an inverse expression on it's own.
 If the inverse mapping logic requires the fields to be mapped, an approach similar in the previous section must be applied to the inverse mapping method.
+
+== Constraints
+
+One important constraint to keep in mind is that the generated method will have some prerequisites on the model.
+It will need a no argument constructor and setter methods on mapped fields.
+
+If you have no control on the model structure, at least on the model you're mapping to then you should be cautious on using MapStruct.
 
 == Conclusion
 MapStruct can provide a simplification to an otherwise bulky and ugly piece of logic.

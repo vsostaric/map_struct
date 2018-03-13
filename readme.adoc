@@ -19,10 +19,10 @@ Furthermore, mapping logic is by it's nature repetitive.
 It most often ends up being a sequence of null or empty checks with a setter call in the conditional body.
 MapStruct aims to exploit this repetitive nature to provide a specialized code generator.
 
-Here I will show a few basic examples how to setup and configurate MapStruct.
+Through a small example I aim to show how to configure and use MapStruct.
 
 The ultimate result is a generated implementation which will most likely resemble a manually written class.
-In fact MapStruct documentation states:
+In fact MapStruct reference guide states:
 ------
 "The general philosophy of MapStruct is to generate code which looks as much as possible as if you had written it yourself from hand."
 ... (1)
@@ -34,10 +34,9 @@ It's more consistent.
 Type errors are cought in compile time while most other errors in build time.
 
 In my opinion the best part of this approach is that it exposes the more complex parts of the mapping logic.
-I will elaborate on this later in the article.
 
 == Setup
-The entire example code can be found in -----.
+The entire example code can be found in https://github.com/vsostaric/map_struct.git.
 It is a simple maven project.
 For a gradle or ant setup see MapStruct documentation (1).
 For it to work mapstruct-jdk8 dependency is needed as well as maven-compiler-plugin configuration.
@@ -190,7 +189,7 @@ When mapped fields are of different types it may not be possible to map them in 
 MapStruct will perform most implicit conversion.
 It will accept casting of primitive types to wrappers and between primitive types and String.
 
-In case of converting a larger type to a smaller one, precision issues may arrise.
+In case of converting a larger type to a smaller one, for instance long to int, precision issues may arrise.
 
 But what if we have a complex type field?
 And if it's mapped to a third type, like in the example:
@@ -205,9 +204,23 @@ public class PersonDTO {
 
 }
 ------
+In cases like this, it is possible to write the implementation manually.
+First a mapping annotation is needed, to generate a call of a method catToCarDTO:
+------
+@Mapping(source = "car", target = "carDTO")
+------
+And then implement a default method to do the actual mapping.
+In this example:
+------
+default CarDTO carToCarDTO(Car car) {
+    return car != null ? CarDTO.builder().modelOfCar(car.getCarModel()).build() : null;
+}
+------
+The default method is required in this case since I'm using an interface.
+Here convention must be followed and we have to make sure the method has the correct signature.
 
 ==== Number or Date to String
-In case of converting an int, BigDecimal or a number type to String we can use numberFormat parameter of the Mapping annotation to define the format.
+In case of converting an int, BigDecimal or another number type to String we can use numberFormat parameter of the Mapping annotation to define the format.
 The format String has to be able to be read by java.text.DecimalFormat.
 Example of this:
 ------
@@ -245,12 +258,14 @@ This would require us to expand the expression to something like this:
 (StringUtils.isNotEmpty(person.getFullName()) && person.getFullName().split(\" \").length > 1) ? person.getFullName().split(\" \")[0] : ""
 ------
 Obviously, a single expression can grow too long and hard to maintain, so it should be used carefully.
-MapStruct expression at this point supports only java expressions.
-This is why the expression must be wrapped in java(/expression/).
+MapStruct supports only java expressions at this point.
+Note that the expression must be wrapped in java(/expression/).
 
 === More Complex Mapping
 If mapping logic can't be fulfilled with naming the source and target, with automatic type casting or with an expression, then we will have to expand the mapper.
 Essentially we will have to write the mapping logic ourselves.
+Previously I've shown an example of mapping different typed fields by manually writing the mapping logic.
+Here I will go through different ways of doing this and more.
 
 One way is to use an @AfterMapping annotation.
 ------
@@ -267,7 +282,7 @@ doComplexMapping( person, personDTO );
 return personDTO;
 ....
 ------
-Annotation @BeforeMapping works in a similar mapping, calling the method after the instance is created.
+Annotation @BeforeMapping works in a similar way, calling the method after the instance is created.
 
 Another way is to create another bean and autowire the Mapper, expand it's functionality and use that bean for mapping in the application.
 ------
@@ -316,18 +331,18 @@ public abstract class PersonMapperDecorator implements PersonMapper {
     }
 }
 -----
-The good part of this is that most of the simple requests can be handled by MapStruct, but even better this approach will isolate the more complex logic in the mapping requirement.
-This way we focus on the difficult parts of our mapping, the ones which usually involve some data fetch or transformation.
+The good part of this is that most of the simple requests can be handled by MapStruct, but even better is that this approach will isolate the more complex logic in the mapping requirement.
+This way we focus on the difficult parts of our mapping, the ones which usually involve some additional data fetch or transformation.
 
 == Inverse Mapping
 
-This will create an inverse mapper:
+Creating an inverse mapper is done with a single annotation.
 ------
 @InheritInverseConfiguration
 Person personDTOToPerson(PersonDTO personDTO);
 ------
-Mapping using the expression parameter will not be applied.
-MapStruct can't create an inverse expression on it's own.
+However, the generated inverse mapper will not include any complex mappings via expressions or manually implemented methods.
+MapStruct can't assume that the manual logic is invertible.
 If the inverse mapping logic requires the fields to be mapped, an approach similar in the previous section must be applied to the inverse mapping method.
 
 == Constraints
@@ -343,7 +358,6 @@ Look the official MapStruct documentation (1) for additional information.
 
 * Mapping with multiple source objects
 * Shared and inherited configuration
-* Using decorators to expand mapping
 
 == Conclusion
 MapStruct can provide a simplification to an otherwise bulky and ugly piece of logic.
@@ -352,3 +366,4 @@ When a need for more complex logic arises the service can be expanded and allow 
 
 == Documentation
 * (1) http://mapstruct.org/documentation/stable/reference/html/
+* (2) http://mapstruct.org/documentation/1.2/api/
